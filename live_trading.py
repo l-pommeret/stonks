@@ -3,6 +3,7 @@ import time
 from datetime import datetime
 import json
 from typing import Optional
+import numpy as np
 
 from preprocessing import FeatureExtractor, LogarithmicBuffer
 from models import CryptoTrader
