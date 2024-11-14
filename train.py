@@ -11,6 +11,7 @@ from typing import Tuple, Dict, Optional
 from data_collection import HistoricalDataCollector
 from preprocessing import FeatureExtractor, LogarithmicBuffer, prepare_data
 from models import CryptoSTST
+import asyncio
 
 class CryptoDataset(Dataset):
     def __init__(self, X: np.ndarray, y: np.ndarray):
