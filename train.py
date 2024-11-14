@@ -181,14 +181,14 @@ async def main():
         train_dataset,
         batch_size=BATCH_SIZE,
         shuffle=True,
-        num_workers=4
+        num_workers=2  # Réduit de 4 à 2
     )
-    
+
     val_loader = DataLoader(
         val_dataset,
         batch_size=BATCH_SIZE,
         shuffle=False,
-        num_workers=4
+        num_workers=2  # Réduit de 4 à 2
     )
     
     # Création et entraînement du modèle

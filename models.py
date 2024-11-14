@@ -9,13 +9,17 @@ class PositionalEncoding(nn.Module):
         super().__init__()
         position = torch.arange(max_len).unsqueeze(1)
         div_term = torch.exp(torch.arange(0, d_model, 2) * (-np.log(10000.0) / d_model))
-        pe = torch.zeros(max_len, d_model)
-        pe[:, 0::2] = torch.sin(position * div_term)
-        pe[:, 1::2] = torch.cos(position * div_term)
+        pe = torch.zeros(1, max_len, d_model)  # Ajout d'une dimension batch
+        pe[0, :, 0::2] = torch.sin(position * div_term)
+        pe[0, :, 1::2] = torch.cos(position * div_term)
         self.register_buffer('pe', pe)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return x + self.pe[:x.size(0)]
+        """
+        Args:
+            x: Tensor, shape [batch_size, seq_len, embedding_dim]
+        """
+        return x + self.pe[:, :x.size(1)]  # Broadcasting sur le batch
 
 class CryptoSTST(nn.Module):
     def __init__(
@@ -51,23 +55,27 @@ class CryptoSTST(nn.Module):
             hidden_size=d_model,
             num_layers=2,
             dropout=dropout,
-            batch_first=True
+            batch_first=True,
+            bidirectional=True  # Ajout du bidirectionnel
         )
         
+        # Adapté pour LSTM bidirectionnel
         self.classifier = nn.Sequential(
-            nn.Linear(d_model, d_model//2),
+            nn.Linear(d_model * 2, d_model),  # *2 pour bidirectionnel
             nn.ReLU(),
             nn.Dropout(dropout),
-            nn.Linear(d_model//2, 3)
+            nn.Linear(d_model, 3)
         )
-        
+
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        # x shape: [batch_size, seq_len, feature_dim]
         x = self.feature_projection(x)
         x = self.pos_encoder(x)
-        
         x = self.transformer_encoder(x)
-        x, _ = self.lstm(x)
-        x = x[:, -1, :]  # Prend le dernier état
+        
+        # LSTM bidirectionnel
+        x, _ = self.lstm(x)  # Output: [batch_size, seq_len, d_model*2]
+        x = x[:, -1, :]      # Prend le dernier état
         
         return self.classifier(x)
 
